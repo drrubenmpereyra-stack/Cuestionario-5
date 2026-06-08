@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluación Neurobiológica - Clínica de la Convergencia</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { 
+            background-color: #000000; 
+            font-family: Arial, sans-serif; 
+            color: #ffffff; 
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Estructura Principal */
+        #app-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        /* Encabezado Institucional */
+        .app-header {
+            border: 1.5px solid #D4AF37;
+            background: #050508;
+            padding: 30px;
+            border-radius: 4px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+        }
+        .app-title {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: #D4AF37;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+        .app-subtitle {
+            font-size: 11px;
+            color: #8a8b8c;
+            font-family: monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Tarjeta de Pregunta Activa */
+        .question-card {
+            background: #050508;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            padding: 30px;
+            margin-bottom: 25px;
+            display: none; /* Controlado por JS */
+            transition: all 0.3s ease;
+        }
+        .question-card.active { display: block; }
+
+        .question-meta {
+            font-family: monospace;
+            font-size: 12px;
+            color: #7b2cbf;
+            font-weight: bold;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .question-text {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            font-weight: bold;
+            color: #cbd5e1;
+        }
+
+        /* Opciones de Respuesta */
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        .option-item {
+            background: #000000;
+            border: 1px solid #334155;
+            padding: 14px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 1.4;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+        .option-item:hover {
+            border-color: #64748b;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .option-item.selected {
+            border-color: #D4AF37;
+            background: rgba(212, 175, 55, 0.03);
+        }
+        .option-prefix {
+            font-family: monospace;
+            font-weight: bold;
+            color: #D4AF37;
+        }
+
+        /* Deshabilitar interacciones tras responder */
+        .options-list.locked .option-item {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        .options-list.locked .option-item.selected { opacity: 1; }
+        .options-list.locked .option-item.correct-answer {
+            border-color: #00FF88 !important;
+            background: rgba(0, 255, 136, 0.04) !important;
+            opacity: 1;
+        }
+        .options-list.locked .option-item.wrong-answer {
+            border-color: #ff2a5f !important;
+            background: rgba(255, 42, 95, 0.04) !important;
+        }
+
+        /* Bloques de Devolución Explicativa (Feedback) */
+        .feedback-container {
+            display: none;
+            padding: 20px;
+            border-radius: 4px;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-top: 20px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .feedback-container.success {
+            display: block;
+            background: #000000;
+            border: 1.5px solid #00FF88;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+        }
+        .feedback-container.error {
+            display: block;
+            background: #000000;
+            border: 1.5px solid #ff2a5f;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 42, 95, 0.1);
+        }
+        .feedback-header {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        /* Botonera de Control */
+        .control-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .action-btn {
+            background: transparent;
+            border: 1.5px solid #D4AF37;
+            color: #D4AF37;
+            padding: 10px 24px;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        .action-btn:hover {
+            background: #D4AF37;
+            color: #000000;
+            box-shadow: 0 0 15px #D4AF37;
+        }
+        .action-btn:disabled {
+            border-color: #475569;
+            color: #475569;
+            cursor: not-allowed;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        /* Pantalla de Resultados Finales */
+        #results-card {
+            display: none;
+            background: #050508;
+            border: 2px solid #D4AF37;
+            border-radius: 6px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+        }
+        .score-circle {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: 4px solid #D4AF37;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 25px auto;
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.15);
+        }
+        .score-num { font-size: 42px; font-weight: bold; font-family: monospace; color: #D4AF37; }
+        .score-label { font-size: 10px; color: #8a8b8c; text-transform: uppercase; margin-top: 2px; }
+        .dictamen-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #cbd5e1;
+            max-width: 650px;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <!-- ENCABEZADO -->
+        <div class="app-header">
+            <h1 class="app-title">Clínica de la Convergencia</h1>
+            <p class="app-subtitle">Módulo de Evaluación: Neurobiología de la Repetición y Hábito Pulsional</p>
+        </div>
+
+        <!-- CONTENEDOR DINÁMICO DE PREGUNTAS -->
+        <div id="quiz-viewport"></div>
+
+        <!-- PANTALLA DE RESULTADOS FINALES -->
+        <div id="results-card">
+            <h2 class="app-title" style="font-size: 22px;">Evaluación Finalizada</h2>
+            <p class="app-subtitle" style="color: #64748b;">Mapeo de Asimilación Epistemológica Profesional</p>
+            <div class="score-circle">
+                <span id="final-score" class="score-num">0/10</span>
+                <span class="score-label">Aciertos</span>
+            </div>
+            <div id="final-dictamen" class="dictamen-text"></div>
+            <button class="action-btn" style="margin-top: 15px;" onclick="reiniciarQuiz()">Reiniciar Módulo</button>
+        </div>
+    </div>
+
+    <script>
+        // BANCO DE DATOS INTEGRADO (Preguntas, Opciones, Respuestas Correctas y Feedbacks Basados en el Encuentro 5)
+        const quizData = [
+            {
+                q: "Cuando un paciente encuentra resistencias que le impiden el acceso a la memoria declarativa, ¿por qué mecanismo sustituye el recuerdo consciente según la fundamentación clínica y neurobiológica? [Referencia: Encuentro 5_Texto 1 parte.pdf]",
+                options: [
+                    "Por una inhibición psicomotora masiva mediada por la vía indirecta.",
+                    "Por la acción (acting out), repitiendo en el presente analítico lo reprimido a través del cuerpo.",
+                    "Por un pasaje al acto que lo eyecta inmediatamente del lazo simbólico.",
+                    "Por un olvido neurobiológico definitivo causado por la atenuación de receptores de adenosina."
+                ],
+                correct: 1,
+                feedbackSuccess: "¡Excelente! El texto fundamental señala explícitamente que cuando el paciente se topa con resistencias que bloquean la memoria declarativa, sustituye el recuerdo por la acción. No lo reproduce como recuerdo, sino como acción; lo repite sin saber que lo hace.",
+                feedbackFail: "Orientación: Revisa el texto técnico de Freud de 1914 ('Recordar, repetir y reelaborar'). Ante la imposibilidad o bloqueo de la memoria declarativa (hipocámpica) por la represión, el aparato psíquico recurre obligatoriamente a la acción involuntaria y corporal en el escenario de la transferencia."
+            },
+            {
+                q: "Desde la perspectiva de la Neurociencia Afectiva, ¿cuál es el equivalente neurobiológico de la inercia pulsional y la compulsión a la repetición inconsciente? [Referencia: Encuentro 5_Texto 1 parte.pdf]",
+                options: [
+                    "La activación exclusiva de la corteza prefrontal ventrolateral derecha durante el etiquetado afectivo.",
+                    "La memoria declarativa/explícita dependiente del hipocampo y la corteza asociativa.",
+                    "La memoria implícita/procedimental codificada en la amígdala y los ganglios basales debido a traumas preverbales o autopistas neuronales del hábito.",
+                    "La parálisis disfuncional de la vía indirecta de los ganglios basales estimulada por receptores D2."
+                ],
+                correct: 2,
+                feedbackSuccess: "¡Es correcto! La inercia pulsional y la compulsión a la repetición encuentran su correlato en la memoria implícita/procedimental subcortical (amígdala y ganglios basales). Las autopistas neuronales fijadas por Potenciación a Largo Plazo (LTP) disparan el circuito automatizado antes de la reflexión cortical.",
+                feedbackFail: "Orientación: Ten en cuenta que la repetición es un 'automatismo sin palabras' y ciego. Por ende, no puede depender de la memoria de tipo declarativa o cortical asociativa. Busca en las estructuras subcorticales encargadas de consolidar los hábitos motores, relacionales y conductuales."
+            },
+            {
+                q: "¿Qué diferencia estructural existe en la clínica de la convergencia entre el 'Acting Out' y el 'Pasaje al Acto' (Passage à l'acte)? [Referencia: Encuentro 5_Texto 1 parte.pdf]",
+                options: [
+                    "El acting out es una parálisis obsesiva; el pasaje al acto es una acción veloz mediada por el putamen.",
+                    "El acting out busca suprimir el hemisferio derecho; el pasaje al acto estimula las áreas de Broca y Wernicke.",
+                    "El acting out es un mensaje cifrado dirigido al Otro esperando ser interpretado; el pasaje al acto es la salida de la escena, el fracaso absoluto de la palabra y pura descarga de la pulsión de muerte.",
+                    "El acting out es un reflejo motor ciego alojado en el putamen; el pasaje al acto es deliberativo y evaluado por el núcleo caudado."
+                ],
+                correct: 2,
+                feedbackSuccess: "¡Brillante! El acting out funciona como una 'puesta en escena' corporal, performativa y dirigida al analista (el Otro) buscando interpretación. En cambio, el pasaje al acto representa la eyección radical del lazo simbólico, el quiebre absoluto de la transferencia y la descarga pura de la pulsión.",
+                feedbackFail: "Orientación: Recuerda que una de estas categorías clínicas todavía 'habla con el cuerpo' y emite un mensaje cifrado dirigido al analista esperando ligadura, mientras que la otra rompe el lazo psicoterapéutico de manera abrupta mediante pura descarga defensiva."
+            },
+            {
+                q: "De acuerdo con el modelo estructural presentado, ¿cómo interactúan un Súper Yo cruel e hipertrófico y el Yo del paciente en el circuito del autosabotaje? [Referencia: Encuentro 5_Texto 1 parte.pdf]",
+                options: [
+                    "El Súper Yo fomenta la plasticidad sináptica para liberar al Yo de deudas simbólicas.",
+                    "El Súper Yo genera culpa inconsciente y el Yo paga con sufrimiento real a través de la repetición del fracaso para aplacar temporalmente ese castigo.",
+                    "El Súper Yo estimula receptores D1 en el estriado para inducir el placer en el malestar.",
+                    "El Súper Yo desconecta de forma permanente la amígdala del hipocampo imposibilitando la autocrítica."
+                ],
+                correct: 1,
+                feedbackSuccess: "¡Exacto! Un Súper Yo hipertrófico y heredero de la pulsión de muerte exige castigo. La repetición del fracaso o del lazo amoroso violento es la respuesta defensiva del Yo para apaciguar de forma transitoria la culpa inconsciente, pagando con sufrimiento real una deuda simbólica fantaseada.",
+                feedbackFail: "Orientación: Analiza el gráfico dinámico de flujos de la estructura clínica en el texto. Verás que se trata de un bucle vicioso cerrado donde el fracaso real produce un sufrimiento que apacigua momentáneamente la severidad superyoica, realimentando el circuito."
+            },
+            {
+                q: "En el desarrollo del hábito y la pauta pulsional dentro de la anatomía del bucle estriatocortical, ¿cómo se distribuyen las funciones el Núcleo Caudado y el Putamen? [Referencia: Encuentro 5_Texto 2 parte.pdf]",
+                options: [
+                    "El putamen procesa el lenguaje abstracto; el núcleo caudado ejecuta la descarga simpática.",
+                    "El núcleo caudado se vincula a la flexibilidad y evaluación de metas junto a la corteza prefrontal; el putamen gobierna el automatismo puro, ejecutando el guion neurótico como un reflejo motor ciego.",
+                    "El putamen maneja el freno cognitivo de la vía indirecta; el núcleo caudado acelera la pulsión destructiva.",
+                    "Ambas estructuras funcionan de manera idéntica, sin que exista migración neural del control conductual."
+                ],
+                correct: 1,
+                feedbackSuccess: "¡Respuesta correcta! En la cronificación del síntoma y del guion conductual, el procesamiento neural migra de áreas flexibles y deliberativas (Núcleo Caudado, hiperconectado con la corteza prefrontal dorsolateral) hacia zonas de automatismo puro, rígido y veloz (Putamen).",
+                feedbackFail: "Orientación: El texto describe que el procesamiento neural migra de zonas flexibles a zonas rígidas. Una de estas estructuras conserva deliberación y evaluación de riesgo, mientras que la otra ejecuta el guion neurótico como un reflejo motor rápido y ciego a las consecuencias actuales."
+            },
+            {
+                q: "¿Cuál es la explicación neurobiológica basada en el sistema de recompensa para la paradoja freudiana del 'gusto por el malestar' o la ganancia primaria del síntoma? [Referencia: Encuentro 5_Texto 2 parte.pdf]",
+                options: [
+                    "La dopamina se libera masivamente porque el sufrimiento físico genera placer endorfínico directo.",
+                    "El cerebro bloquea por completo la producción de cortisol ante eventos predecibles.",
+                    "El cerebro subcortical teme a la incertidumbre (peligro de muerte biológica) y prefiere un dolor conocido y predecible; el cumplimiento del guion neurótico reduce la incertidumbre y genera una sutil liberación dopaminérgica por Aprendizaje por Error de Predicción.",
+                    "La vía indirecta se hiperactiva liberando dopamina para paralizar las funciones obsesivas."
+                ],
+                correct: 2,
+                feedbackSuccess: "¡Excelente análisis! Para el cerebro subcortical, la incertidumbre representa un peligro supremo. Cuando el sujeto se autosabotea, el circuito recibe la confirmación de que el mundo funciona exactamente como predijo su trauma. Esta reducción de incertidumbre genera una sutil liberación dopaminérgica: la ganancia primaria.",
+                feedbackFail: "Orientación: Recuerda que la dopamina no es el neurotransmisor del placer, sino de la anticipación, la predictibilidad y la consolidación del aprendizaje. El cerebro prefiere un malestar predecible (que le permitió sobrevivir en el pasado) a la angustia de lo indeterminado."
+            },
+            {
+                q: "¿Qué sucede a nivel de milisegundos en el desequilibrio de las vías de los ganglios basales durante un acting out traumático? [Referencia: Encuentro 5_Texto 2 parte.pdf]",
+                options: [
+                    "La vía indirecta (freno mediado por receptores D2) bloquea el tálamo antes de que el impulso surja.",
+                    "La vía directa (acelerador pulsional D1) se dispara de forma inmediata ante los disparadores del trauma (cues), ejecutando el acto destructivo antes de que la corteza prefrontal y la vía indirecta cognitiva puedan evaluar la situación.",
+                    "El globo pálido inactiva de forma permanente la corteza prefrontal dorsolateral.",
+                    "Se produce una parálisis obsesiva inmediata que impide cualquier descarga motora."
+                ],
+                correct: 1,
+                feedbackSuccess: "¡Exacto! En la neurobiología de la repetición, la vía directa actúa en milisegundos como un acelerador automático frente a las señales (cues) del trauma. Dado que la corteza prefrontal procesa la información de forma más lenta, llega tarde; ese intervalo temporal es el territorio del síntoma.",
+                feedbackFail: "Orientación: Considera el dilema del 'acelerador y el freno' pulsional. En la inhibición o parálisis se sobreactiva el freno (vía indirecta), pero en la compulsión a la repetición destructiva y la descarga motora inmediata, la vía directa es la que esquiva el control top-down prefrontal."
+            },
+            {
+                q: "¿Por qué el insight intelectual o la simple comprensión teórica de la historia del trauma suelen ser insuficientes para detener la compulsión a la repetición? [Referencia: Encuentro 5_Texto 2 parte.pdf]",
+                options: [
+                    "Porque el hipocampo borra los recuerdos cada vez que el analista interviene.",
+                    "Porque los ganglios basales son estructuras de 'aprendizaje lento' y memoria procedimental que solo se reconfiguran mediante la experiencia y la repetición de nuevas vivencias relacionales dentro del encuadre.",
+                    "Because la corteza prefrontal medial no posee conexiones anatómicas con el sistema límbico.",
+                    "Porque el Súper Yo destruye las huellas sinápticas competitivas a través de la vía somatomotora."
+                ],
+                correct: 1,
+                feedbackSuccess: "¡Excelente! Los ganglios basales no cambian a través de la comprensión abstracta. Al ser estructuras ligadas a la memoria procedimental y al hábito automatizado, requieren la repetición de una nueva experiencia relacional real dentro del encuadre (experiencia emocional correctora) para hackear el viejo circuito.",
+                feedbackFail: "Orientación: Considera el tipo de memoria que aloja el síntoma repetitivo (procedimental/implícita subcortical). El entendimiento consciente habita en la corteza. Si los ganglios basales operan bajo un esquema de 'aprendizaje lento', ¿cómo se reentrena estructuralmente un hábito?"
+            },
+            {
+                q: "¿Cuál es la fundamentación neurobiológica de la técnica analítica del 'Uso del Foco' (Estrategia A) en la Clínica de la Convergencia? [Referencia: Encuentro 5_Texto 2 y 3 parte.pdf]",
+                options: [
+                    "Es un dispositivo diseñado para inducir un secuestro amigdalino artificial controlado.",
+                    "Dispara receptores D2 en el putamen para acelerar la finalización abrupta del tratamiento.",
+                    "Delimita un conflicto central explícito, lo que recluta activamente la corteza prefrontal medial y el cíngulo anterior para fortalecer la regulación de arriba hacia abajo (top-down), frenando la descarga automática del estriado.",
+                    "Estimula las áreas motoras primarias para propiciar un pasaje al acto catártico."
+                ],
+                correct: 2,
+                feedbackSuccess: "¡Extraordinario! Al co-construir y enunciar un eje conceptual nítido (foco relacional y dinámico), se activa la corteza prefrontal medial y el cíngulo anterior. Estas áreas envían señales inhibitorias top-down hacia la amígdala y el estriado motor, abriendo una ventana entre el impulso y la acción.",
+                feedbackFail: "Orientación: La focalización psicoterapéutica se opone a la asociación libre dispersa en pacientes con fijaciones rígidas. Al obligar al sujeto a concentrarse sostenidamente en su conflicto central, estamos reclutando el control prefrontal ejecutivo para frenar la inercia del putamen."
+            },
+            {
+                q: "¿Qué fenómeno neurobiológico ocurre en el cerebro del paciente cuando el analista aplica la técnica de 'Asimetría no Punitiva' frente a un acting out (Caso Germán)? [Referencia: Encuentro 5_Texto 3 parte.pdf]",
+                options: [
+                    "Se inactiva la corteza asociativa y se inhibe la secreción de serotonina en el tallo cerebral.",
+                    "Se genera un Error de Predicción de Dopamina: el cerebro subcortical predecía un castigo basado en su pasado, pero la respuesta cálida y consistente del clínico rompe el guion esperado y debilita la vía rígida del hábito.",
+                    "Se produce una potenciación de la vía directa de los ganglios basales consolidando el autosabotaje.",
+                    "Se induce un síntoma de conversión histérica inmediato por estimulación del núcleo caudado."
+                ],
+                correct: 1,
+                feedbackSuccess: "¡Excelente respuesta final! La transferencia proyecta la memoria procedimental de los lazos primitivos hostiles. Si el cerebro del paciente funciona como una máquina predictiva que espera castigo o abandono, la respuesta asimétrica, analítica y no punitiva del terapeuta genera un potente error de predicción que frena la inercia estriatal.",
+                feedbackFail: "Orientación: Piensa en la función adaptativa del cerebro como predictor. Ante un acting out provocador, el guion del paciente asume con certeza que el analista reaccionará atacando o rechazando. Si el clínico no actúa la contratransferencia y ofrece consistencia maleable, ¿qué le ocurre a la sinapsis del trauma?"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let score = 0;
+
+        // Renderiza el cuestionario en el DOM
+        function inicializarQuiz() {
+            const viewport = document.getElementById('quiz-viewport');
+            viewport.innerHTML = "";
+            document.getElementById('results-card').style.display = "none";
+
+            quizData.forEach((data, index) => {
+                const card = document.createElement('div');
+                card.className = `question-card ${index === 0 ? 'active' : ''}`;
+                card.id = `card-${index}`;
+
+                // Lista de Opciones en formato HTML
+                let optionsHtml = "";
+                data.options.forEach((opt, oIdx) => {
+                    const prefix = String.fromCharCode(65 + oIdx); // A, B, C, D
+                    optionsHtml += `
+                        <div class="option-item" onclick="seleccionarOpcion(${index}, ${oIdx})">
+                            <span class="option-prefix">${prefix})</span>
+                            <span class="option-text-val">${opt}</span>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="question-meta">Dimensión Evaluativa: Hito ${index + 1} de ${quizData.length}</div>
+                    <div class="question-text">${data.q}</div>
+                    <div class="options-list" id="options-${index}">
+                        ${optionsHtml}
+                    </div>
+                    <div class="feedback-container" id="feedback-${index}"></div>
+                    <div class="control-row">
+                        <button class="action-btn" id="btn-${index}" disabled onclick="procesarRespuesta(${index})">Validar Hito Clínico</button>
+                    </div>
+                `;
+                viewport.appendChild(card);
+            });
+            
+            // Reset de variables globales
+            currentQuestionIndex = 0;
+            userAnswers = new Array(quizData.length).fill(null);
+            score = 0;
+        }
+
+        // Gestiona la selección visual de las opciones
+        function seleccionarOpcion(qIdx, oIdx) {
+            userAnswers[qIdx] = oIdx;
+            const container = document.getElementById(`options-${qIdx}`);
+            const items = container.getElementsByClassName('option-item');
+            
+            // Remover selección previa
+            for (let item of items) { item.classList.remove('selected'); }
+            
+            // Aplicar nueva selección
+            items[oIdx].classList.add('selected');
+            
+            // Habilitar botón de validación
+            document.getElementById(`btn-${qIdx}`).disabled = false;
+        }
+
+        // Evalúa la respuesta, bloquea la pregunta e inyecta el feedback correspondiente
+        function procesarRespuesta(qIdx) {
+            const selected = userAnswers[qIdx];
+            const correct = quizData[qIdx].correct;
+            const optionsContainer = document.getElementById(`options-${qIdx}`);
+            const feedbackBox = document.getElementById(`feedback-${qIdx}`);
+            const actionBtn = document.getElementById(`btn-${qIdx}`);
+            const items = optionsContainer.getElementsByClassName('option-item');
+
+            // Bloquear interacciones
+            optionsContainer.classList.add('locked');
+
+            if (selected === correct) {
+                score++;
+                items[selected].classList.add('correct-answer');
+                feedbackBox.className = "feedback-container success";
+                feedbackBox.innerHTML = `<div class="feedback-header">✓ Refuerzo Neurobiológico</div><div>${quizData[qIdx].feedbackSuccess}</div>`;
+            } else {
+                items[selected].classList.add('wrong-answer');
+                items[correct].classList.add('correct-answer'); // Resaltar la correcta para aprendizaje
+                feedbackBox.className = "feedback-container error";
+                feedbackBox.innerHTML = `<div class="feedback-header">⚠️ Línea de Orientación Clínico-Teórica</div><div>${quizData[qIdx].feedbackFail}</div>`;
+            }
+
+            // Configurar botón para avanzar al siguiente hito o finalizar
+            if (qIdx < quizData.length - 1) {
+                actionBtn.innerText = "Siguiente Hito →";
+                actionBtn.onclick = () => avanzarPregunta(qIdx);
+            } else {
+                actionBtn.innerText = "Finalizar Protocolo";
+                actionBtn.onclick = () => mostrarResultadosFinales();
+            }
+        }
+
+        function avanzarPregunta(qIdx) {
+            document.getElementById(`card-${qIdx}`).classList.remove('active');
+            currentQuestionIndex++;
+            document.getElementById(`card-${currentQuestionIndex}`).classList.add('active');
+        }
+
+        // Renderiza la pantalla final de dictamen analítico
+        function mostrarResultadosFinales() {
+            // Ocultar la última tarjeta de pregunta
+            document.getElementById(`card-${quizData.length - 1}`).classList.remove('active');
+            
+            const resultsCard = document.getElementById('results-card');
+            const scoreNum = document.getElementById('final-score');
+            const dictamenBox = document.getElementById('final-dictamen');
+            
+            scoreNum.innerText = `${score}/${quizData.length}`;
+            resultsCard.style.display = "block";
+
+            let dictamen = "";
+            if (score >= 9) {
+                dictamen = "<strong>Dictamen: Integración de Alta Fidelidad.</strong> El profesional demuestra un dominio quirúrgico en la convergencia epistemológica entre psicoanálisis y neurociencias. Capacidad óptima para el diseño de estrategias focalizadas, hackeo de circuitos estriatales y manejo avanzado de la transferencia en el encuadre clínico.";
+            } else if (score >= 7) {
+                dictamen = "<strong>Dictamen: Aptitud Clínica Homologada.</strong> Comprensión estructural de la marcha transferencial, el acting out y los circuitos de habituación de los ganglios basales. Se recomienda repasar las microintervenciones clínicas para agilizar el pasaje de la vía somatomotora a la simbolización cortical.";
+            } else {
+                dictamen = "<strong>Dictamen: Revisión de Protocolo Requerida.</strong> Se evidencia una disociación entre los fundamentos de la neurociencia afectiva y la práctica analítica de la repetición. Se prescribe una lectura exhaustiva de los módulos técnicos del Encuentro 5 enfocándose en las tácticas del Uso del Foco y la Asimetría no Punitiva antes de la atención de pacientes.";
+            }
+            
+            dictamenBox.innerHTML = dictamen;
+        }
+
+        function reiniciarQuiz() {
+            inicializarQuiz();
+        }
+
+        // Arranque de la aplicación al cargar el documento
+        window.onload = inicializarQuiz;
+    </script>
+</body>
+</html>
