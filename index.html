@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Evaluación Neurobiológica - Clínica de la Convergencia</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { 
@@ -250,8 +252,23 @@
             <button class="action-btn" style="margin-top: 15px;" onclick="reiniciarQuiz()">Reiniciar Módulo</button>
         </div>
     </div>
+    <div id="identificacion-card" style="border: 2px solid #D4AF37; padding: 20px; text-align: center; margin-bottom: 20px; background-color: #f9f9f9;">
+    <h3 style="margin-top: 0;">Identificación del Estudiante</h3>
+    <input type="text" id="input-nombre" placeholder="Ingresa tu nombre y apellido" required style="padding: 10px; width: 80%; border: 1px solid #ccc; border-radius: 4px;">
+</div>
 
     <script>
+        const firebaseConfig = {
+    apiKey: "AIzaSyD47_2UtWLFI_VRVvvXVAqn4zZzZ4d1ggo",
+    authDomain: "av-clinica-convergencia.firebaseapp.com",
+    databaseURL: "https://av-clinica-convergencia-default-rtdb.firebaseio.com",
+    projectId: "av-clinica-convergencia",
+    storageBucket: "av-clinica-convergencia.firebasestorage.app",
+    messagingSenderId: "939404425675",
+    appId: "1:939404425675:web:8cfae157099efabd741e4e"
+};
+if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+const db = firebase.firestore();
         // BANCO DE DATOS INTEGRADO (Preguntas, Opciones, Respuestas Correctas y Feedbacks Basados en el Encuentro 5)
         const quizData = [
             {
@@ -480,28 +497,49 @@
         }
 
         // Renderiza la pantalla final de dictamen analítico
-        function mostrarResultadosFinales() {
-            // Ocultar la última tarjeta de pregunta
-            document.getElementById(`card-${quizData.length - 1}`).classList.remove('active');
-            
-            const resultsCard = document.getElementById('results-card');
-            const scoreNum = document.getElementById('final-score');
-            const dictamenBox = document.getElementById('final-dictamen');
-            
-            scoreNum.innerText = `${score}/${quizData.length}`;
-            resultsCard.style.display = "block";
+       function mostrarResultadosFinales() {
+    const nombreIngresado = document.getElementById('input-nombre').value;
+    
+    if (!nombreIngresado || nombreIngresado.trim() === "") {
+        alert("Por favor, ingresa tu nombre y apellido antes de finalizar.");
+        return;
+    }
 
-            let dictamen = "";
-            if (score >= 9) {
-                dictamen = "<strong>Dictamen: Integración de Alta Fidelidad.</strong> El profesional demuestra un dominio quirúrgico en la convergencia epistemológica entre psicoanálisis y neurociencias. Capacidad óptima para el diseño de estrategias focalizadas, hackeo de circuitos estriatales y manejo avanzado de la transferencia en el encuadre clínico.";
-            } else if (score >= 7) {
-                dictamen = "<strong>Dictamen: Aptitud Clínica Homologada.</strong> Comprensión estructural de la marcha transferencial, el acting out y los circuitos de habituación de los ganglios basales. Se recomienda repasar las microintervenciones clínicas para agilizar el pasaje de la vía somatomotora a la simbolización cortical.";
-            } else {
-                dictamen = "<strong>Dictamen: Revisión de Protocolo Requerida.</strong> Se evidencia una disociación entre los fundamentos de la neurociencia afectiva y la práctica analítica de la repetición. Se prescribe una lectura exhaustiva de los módulos técnicos del Encuentro 5 enfocándose en las tácticas del Uso del Foco y la Asimetría no Punitiva antes de la atención de pacientes.";
-            }
-            
-            dictamenBox.innerHTML = dictamen;
-        }
+    // Ocultar última pregunta
+    document.getElementById(`card-${quizData.length - 1}`).classList.remove('active');
+    
+    const resultsCard = document.getElementById('results-card');
+    const dictamenBox = document.getElementById('final-dictamen');
+    
+    document.getElementById('final-score').innerText = `${score}/${quizData.length}`;
+    resultsCard.style.display = "block";
+
+    // Lógica de dictamen
+    let dictamen = "";
+    if (score >= 9) {
+        dictamen = "<strong>Dictamen: Integración Clínico-Alostática de Excelencia.</strong> Dominio absoluto sobre la modulación psicodinámica.";
+    } else if (score >= 7) {
+        dictamen = "<strong>Dictamen: Idoneidad Clínica Convalidada.</strong> Comprensión clara de los mecanismos neuroendocrinos.";
+    } else {
+        dictamen = "<strong>Dictamen: Revisión Técnica Prescripta.</strong> Se observa una tendencia a priorizar interpretaciones genéticas abstractas.";
+    }
+    dictamenBox.innerHTML = dictamen;
+
+    // Guardado en Firestore
+    db.collection("resultados").add({
+        alumno: nombreIngresado,
+        test_numero: "Test 5",
+        nota: score + "/10",
+        fecha: new Date().toLocaleString()
+    })
+    .then(() => {
+        dictamenBox.innerHTML += `<p style="color: #00FF88; margin-top: 15px;">✓ Resultados guardados en el sistema.</p>`;
+    })
+    .catch((error) => {
+        console.error("Error al guardar:", error);
+        dictamenBox.innerHTML += `<p style="color: #FF0000; margin-top: 15px;">X Error al guardar en la base de datos.</p>`;
+    });
+}
 
         function reiniciarQuiz() {
             inicializarQuiz();
